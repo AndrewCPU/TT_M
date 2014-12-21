@@ -33,14 +33,19 @@ public class MapDecay {
 
     public void undo(ArenaAPI arenaAPI)
     {
-        for(BlockState state : states.get(arenaAPI))
+        if(states.containsKey(arenaAPI))
         {
+            for(BlockState state : states.get(arenaAPI))
+            {
 
-            state.getLocation().getBlock().setType(state.getType());
-            state.getLocation().getBlock().setData(state.getBlock().getData());
+                state.getLocation().getBlock().setType(state.getType());
+                state.getLocation().getBlock().setData(state.getBlock().getData());
 
 
+            }
         }
+
+
 
     }
 

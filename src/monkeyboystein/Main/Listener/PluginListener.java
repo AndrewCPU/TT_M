@@ -4,6 +4,7 @@ import monkeyboystein.Main.Main;
 import monkeyboystein.utils.Storage;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -29,6 +30,11 @@ public class PluginListener implements Listener{
     public void interact(PlayerInteractEvent event)
     {
         storage.getInteractManager().interact(event);
+    }
+    @EventHandler
+    public void breakBlock(BlockBreakEvent event)
+    {
+        storage.getManagement().breakBlock(event);
     }
     @EventHandler
     public void place(BlockPlaceEvent event)

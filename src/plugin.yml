@@ -1,0 +1,9 @@
+name: MinersRun
+main: monkeyboystein.Main.Main
+version: 1.0
+description: Miners do indeed Run!!
+author: Andrewcpu
+commands:
+   mr:
+      permission: mining.admin
+      usage: /<command>

@@ -23,6 +23,24 @@ public class Storage {
     ArenaManager arenaManager;
     int maxPlayers = 5;
     SignManager signManager;
+    TickManager tickManager;
+    MainScoreboardManager mainScoreboardManager;
+
+    public MainScoreboardManager getMainScoreboardManager() {
+        return mainScoreboardManager;
+    }
+
+    public void setMainScoreboardManager(MainScoreboardManager mainScoreboardManager) {
+        this.mainScoreboardManager = mainScoreboardManager;
+    }
+
+    public TickManager getTickManager() {
+        return tickManager;
+    }
+
+    public void setTickManager(TickManager tickManager) {
+        this.tickManager = tickManager;
+    }
 
     public String getHeader() {
         return header;

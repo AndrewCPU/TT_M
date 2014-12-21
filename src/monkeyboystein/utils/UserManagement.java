@@ -3,8 +3,11 @@ package monkeyboystein.utils;
 import monkeyboystein.Arena.ArenaAPI;
 import monkeyboystein.Arena.ArenaState;
 import monkeyboystein.Main.Main;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -13,6 +16,70 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 public class UserManagement {
     Storage storage = Main.storage;
+    public void breakBlock(BlockBreakEvent event)
+    {
+        if(event.getBlock().getType().toString().contains("ORE"))
+        {
+            int points = 0;
+            if(event.getBlock().getType().toString().contains("REDSTONE"))
+            {
+                points = 3;
+            }
+            if(event.getBlock().getType().toString().contains("DIAMOND"))
+            {
+                points = 10;
+            }
+            if(event.getBlock().getType().toString().contains("COAL"))
+            {
+                points = 1;
+            }
+            if(event.getBlock().getType().toString().contains("EMERALD"))
+            {
+                points = 7;
+            }
+            if(event.getBlock().getType().toString().contains("LAPIS"))
+            {
+                points = 5;
+            }
+            if(event.getBlock().getType().toString().contains("IRON"))
+            {
+                points = 6;
+            }
+            if(event.getBlock().getType().toString().contains("GOLD"))
+            {
+                points = 5;
+            }
+            if(storage.getArenaManager().isInArena(event.getPlayer()))
+            {
+                ArenaAPI arenaAPI = storage.getArenaManager().getArena(event.getPlayer().getName());
+                if(arenaAPI!=null)
+                {
+                    ArenaScore score = null;
+                    for(ArenaScore s : arenaAPI.getScores())
+                    {
+                        if(s.playerName.equals(event.getPlayer().getName()))
+                        {
+                            score = s;
+
+                        }
+                    }
+
+                    if(score!=null)
+                    {
+                        arenaAPI.removeScore(score);
+                        score.score(points);
+                        arenaAPI.addScore(score);
+                        event.getPlayer().sendMessage(storage.header + "You scored " + points + " points");
+                    }
+                }
+            }
+
+        }
+        else
+        {
+            event.setCancelled(true);
+        }
+    }
     public void eventTrigger(Event event) {
         if (event instanceof PlayerJoinEvent) {
             PlayerJoinEvent playerJoinEvent = (PlayerJoinEvent) event;
@@ -44,6 +111,21 @@ public class UserManagement {
 
     public void leaveGame(ArenaAPI arena, Player p)
     {
+        arena.removePlayer(p.getName());
+        for(String s : arena.getPlayers())
+        {
+            Bukkit.getPlayer(s).sendMessage(storage.header + p.getName() + " is a quitter!");
+        }
+        ArenaScore score = null;
+        for(ArenaScore s : arena.getScores())
+        {
+            if(s.playerName.equals(p.getName()))
+            {
+                score = s;
+
+            }
+        }
+        arena.removeScore(score);
 
     }
 

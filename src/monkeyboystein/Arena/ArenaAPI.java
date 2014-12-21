@@ -34,7 +34,14 @@ public class ArenaAPI {
     Lobby lobby = new Lobby(null);
     ArenaState state = ArenaState.OFF;
     Location signLoc;
-
+    public void removeScore(ArenaScore a)
+    {
+        scores.remove(a);
+    }
+    public void addScore(ArenaScore a)
+    {
+        scores.add(a);
+    }
     public Location getSignLoc() {
         return signLoc;
     }
