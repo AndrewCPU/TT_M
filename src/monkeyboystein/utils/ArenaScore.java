@@ -1,0 +1,25 @@
+package monkeyboystein.utils;
+
+/**
+ * Created by Andrew on 12/19/2014.
+ */
+public class ArenaScore {
+    int score = 0;
+    String playerName;
+    String arenaName;
+
+    public ArenaScore(int score, String playerName, String arenaName) {
+        this.score = score;
+        this.playerName = playerName;
+        this.arenaName = arenaName;
+    }
+
+    public void score()
+    {
+        score+=1;
+    }
+    public void score(int i)
+    {
+        score+=i;
+    }
+}
