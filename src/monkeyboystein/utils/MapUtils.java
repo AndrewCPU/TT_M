@@ -1,6 +1,7 @@
 package monkeyboystein.utils;
 
 import monkeyboystein.Arena.ArenaAPI;
+import monkeyboystein.Main.Main;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -15,31 +16,8 @@ import java.util.Random;
  * Created by Andrew on 12/19/2014.
  */
 public class MapUtils {
-    public static List<Block> blocksFromTwoPoints(Location loc1, Location loc2) {
-        List<Block> blocks = new ArrayList<Block>();
 
-        int topBlockX = (loc1.getBlockX() < loc2.getBlockX() ? loc2.getBlockX() : loc1.getBlockX());
-        int bottomBlockX = (loc1.getBlockX() > loc2.getBlockX() ? loc2.getBlockX() : loc1.getBlockX());
-
-        int topBlockY = (loc1.getBlockY() < loc2.getBlockY() ? loc2.getBlockY() : loc1.getBlockY());
-        int bottomBlockY = (loc1.getBlockY() > loc2.getBlockY() ? loc2.getBlockY() : loc1.getBlockY());
-
-        int topBlockZ = (loc1.getBlockZ() < loc2.getBlockZ() ? loc2.getBlockZ() : loc1.getBlockZ());
-        int bottomBlockZ = (loc1.getBlockZ() > loc2.getBlockZ() ? loc2.getBlockZ() : loc1.getBlockZ());
-
-        for (int x = bottomBlockX; x <= topBlockX; x++) {
-            for (int z = bottomBlockZ; z <= topBlockZ; z++) {
-                for (int y = bottomBlockY; y <= topBlockY; y++) {
-                    Block block = loc1.getWorld().getBlockAt(x, y, z);
-
-                    blocks.add(block);
-                }
-            }
-        }
-
-        return blocks;
-    }
-    public static boolean isOre(Block block)
+    public boolean isOre(Block block)
     {
         if(block.getType().toString().contains("ORE"))
         {
@@ -47,7 +25,7 @@ public class MapUtils {
         }
         return false;
     }
-    public static void regenerateMap(ArenaAPI arenaAPI) {
+    public void regenerateMap(ArenaAPI arenaAPI, Location c1, Location c2) {
 
         for(BlockState state : arenaAPI.getBrokenBlocks())
         {
@@ -56,7 +34,7 @@ public class MapUtils {
         }
         arenaAPI.setBrokenBlocks(new ArrayList<BlockState>());
 
-        List<Block> blocks = blocksFromTwoPoints(arenaAPI.getCorner1(), arenaAPI.getCurrent2());
+        List<Block> blocks = Main.storage.getMain().blocksFromTwoPoints(c1, c2);
 
 
 
@@ -100,7 +78,7 @@ public class MapUtils {
                 }
                 else
                 {
-                    int chance = new Random().nextInt(21- 1) + 1;
+                    int chance = new Random().nextInt(501- 1) + 1;
                     if(chance==4)
                     {
                         Block block = loc.getBlock();

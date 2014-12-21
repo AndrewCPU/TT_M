@@ -18,6 +18,7 @@ public class UserManagement {
     Storage storage = Main.storage;
     public void breakBlock(BlockBreakEvent event)
     {
+
         if(event.getBlock().getType().toString().contains("ORE"))
         {
             int points = 0;
@@ -51,9 +52,12 @@ public class UserManagement {
             }
             if(storage.getArenaManager().isInArena(event.getPlayer()))
             {
-                ArenaAPI arenaAPI = storage.getArenaManager().getArena(event.getPlayer().getName());
+                ArenaAPI arenaAPI = storage.getArenaManager().getPlayerArena(event.getPlayer());
                 if(arenaAPI!=null)
                 {
+
+                    event.setExpToDrop(0);
+
                     ArenaScore score = null;
                     for(ArenaScore s : arenaAPI.getScores())
                     {
@@ -70,15 +74,34 @@ public class UserManagement {
                         score.score(points);
                         arenaAPI.addScore(score);
                         event.getPlayer().sendMessage(storage.header + "You scored " + points + " points");
+
+
                     }
+                    if(event.isCancelled()==false)
+                    {
+                        arenaAPI.addBlock(event.getBlock().getState());
+                    }
+
                 }
             }
 
         }
         else
         {
-            event.setCancelled(true);
+            if(storage.getArenaManager().isInArena(event.getPlayer()))
+            {
+                event.setCancelled(true);
+            }
+            else
+            {
+                if(!event.getPlayer().isOp())
+                {
+                    event.setCancelled(true);
+                }
+            }
+
         }
+
     }
     public void eventTrigger(Event event) {
         if (event instanceof PlayerJoinEvent) {

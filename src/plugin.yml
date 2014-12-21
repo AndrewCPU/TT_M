@@ -7,3 +7,4 @@ commands:
    mr:
       permission: mining.admin
       usage: /<command>
+   leave:

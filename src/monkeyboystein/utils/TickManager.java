@@ -11,7 +11,7 @@ public class TickManager {
     Storage storage = Main.storage;
     public void tickAll()
     {
-        for(ArenaAPI arenaAPI : storage.getMain().arenas)
+        for(ArenaAPI arenaAPI : storage.getArenas())
         {
             arenaAPI.tick();
             storage.getSignManager().updateSign(arenaAPI);
@@ -19,7 +19,7 @@ public class TickManager {
     }
     public void tick(ArenaState state)
     {
-        for(ArenaAPI arenaAPI : storage.getMain().arenas)
+        for(ArenaAPI arenaAPI : storage.getArenas())
         {
             if(arenaAPI.getState()==state)
             {

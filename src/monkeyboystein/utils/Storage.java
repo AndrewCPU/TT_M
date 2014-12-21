@@ -25,6 +25,15 @@ public class Storage {
     SignManager signManager;
     TickManager tickManager;
     MainScoreboardManager mainScoreboardManager;
+    MapUtils mapUtils;
+
+    public MapUtils getMapUtils() {
+        return mapUtils;
+    }
+
+    public void setMapUtils(MapUtils mapUtils) {
+        this.mapUtils = mapUtils;
+    }
 
     public MainScoreboardManager getMainScoreboardManager() {
         return mainScoreboardManager;

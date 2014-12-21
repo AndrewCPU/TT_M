@@ -3,6 +3,7 @@ package monkeyboystein.Arena;
 import monkeyboystein.Main.Main;
 import monkeyboystein.utils.*;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -28,12 +29,22 @@ public class ArenaAPI {
     Location current1;
     Location current2;
     List<Block> arenaBlocks;
-    int time = 600;
+    int time = 50;
     List<ArenaScore> scores = new ArrayList<ArenaScore>();
     ArenaPlayerSpawns spawns = new ArenaPlayerSpawns();
     Lobby lobby = new Lobby(null);
     ArenaState state = ArenaState.OFF;
     Location signLoc;
+    Location center;
+
+    public Location getCenter() {
+        return center;
+    }
+
+    public void setCenter(Location center) {
+        this.center = center;
+    }
+
     public void removeScore(ArenaScore a)
     {
         scores.remove(a);
@@ -68,6 +79,11 @@ public class ArenaAPI {
 
     int topY;
     List<BlockState> brokenBlocks = new ArrayList<BlockState>();
+
+    public void addBlock(BlockState state1)
+    {
+        brokenBlocks.add(state1);
+    }
 
     public int getTopY() {
         return topY;
@@ -169,6 +185,14 @@ public class ArenaAPI {
                             tasks.clear();
                             cancel();
                         }
+                        else
+                        {
+                            for(String s : getPlayers())
+                            {
+                                Bukkit.getPlayer(s).sendMessage(storage.getHeader() + "Game starting in " + time);
+                            }
+                        }
+
                     }
                     else
                     {
@@ -178,7 +202,7 @@ public class ArenaAPI {
                         }
                     }
                 }
-            }.runTaskLater(storage.getMain(), num);
+            }.runTaskLater(storage.getMain(), num * 20);
             tasks.add(task);
 
         }
@@ -198,6 +222,10 @@ public class ArenaAPI {
         if(players.contains(s))
         {
             players.add(s);
+        }
+        if(dead.contains(s))
+        {
+            dead.remove(s);
         }
         update();
     }
@@ -275,7 +303,60 @@ public class ArenaAPI {
 
     public void endGame()
     {
+//todo this
+        ArenaScore topPlayer = null;
+        for(ArenaScore arenaScore : scores)
+        {
+            if(topPlayer==null)
+            {
+                topPlayer = arenaScore;
+            }
+            else
+            {
+                if(topPlayer.getScore()<arenaScore.getScore())
+                {
+                    topPlayer = arenaScore;
+                }
+            }
+        }
+        if(topPlayer!=null)
+        {
+            Bukkit.broadcastMessage(storage.getHeader() + topPlayer.getPlayerName() + " has won with " + topPlayer.getScore() + " on " + ChatColor.RED +  getName());
+            for(String s : players)
+            {
+                ArenaScore score = null;
+                for(ArenaScore arenaScore : scores)
+                {
+                    if(arenaScore.getPlayerName().equalsIgnoreCase(s))
+                    {
+                        score = arenaScore;
+                    }
 
+                }
+                if(score!=null)
+                {
+                    int gems = score.getScore() / 2;
+                    gems+=15;
+                    storage.getSql().setGems(s, storage.getSql().getGems(s) + gems);
+                    Player p = Bukkit.getPlayer(s);
+                    p.sendMessage(ChatColor.GREEN + "------------------------------");
+                    p.sendMessage(ChatColor.GREEN + "+" + gems + ChatColor.WHITE +" in total");
+                    p.sendMessage(ChatColor.GRAY + "+" + 10 + ChatColor.WHITE + " for participation");
+                    p.sendMessage(ChatColor.BLUE + "+" + 5 + ChatColor.WHITE + " because I'm nice");
+                    p.sendMessage(ChatColor.GREEN + "------------------------------");
+                    p.getInventory().setContents(Bukkit.createInventory(null,p.getInventory().getSize()).getContents());
+                    p.getEquipment().setArmorContents(null);
+                    p.setLevel(0);
+                    storage.getMainScoreboardManager().updateScoreboard();
+                    p.teleport(p.getWorld().getSpawnLocation());
+
+
+
+                }
+            }
+
+        }
+        reset();
     }
     public Location getLower()
     {
@@ -350,29 +431,44 @@ public class ArenaAPI {
     public void reset()
     {
         storage.getDecay().undo(this);
-        MapUtils.regenerateMap(this);
+        storage.getMapUtils().regenerateMap(this, corner1,corner2);
         scores = new ArrayList<ArenaScore>();
-        time = 600;
+        time = 50;
         setCurrent1(getLower());
         Location higher = getHigher();
         higher.setY(getLower().getY());
         setCurrent2(higher);
         setState(ArenaState.OFF);
+        setPlayers(new ArrayList<String>());
+        dead = new ArrayList<String>();
+    }
+    public void addDead(String s)
+    {
+        dead.add(s);
+    }
+    public List<String> getDead()
+    {
+        return dead;
     }
 
-
+    List<String> dead = new ArrayList<String>();
     public void tick()
     {
         time-=1;
-        if(time<=0)
+        if(time<=0 || dead.size()==players.size() || dead.size() == (players.size() - 1) || players.size()==1 || players.size()==0)
         {
             endGame();
         }
 
         for(String s : players)
         {
-            Bukkit.getPlayer(s).setExp(time);
+            Bukkit.getPlayer(s).setLevel(time);
         }
+        if(storage.getMain().isFactorOf(time,10))
+        {
+            storage.getDecay().decay(this);
+        }
+
 
     }
 }

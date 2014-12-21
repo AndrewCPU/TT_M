@@ -19,7 +19,7 @@ public class SignManager {
         if(b.getType().toString().contains("SIGN"))
         {
             Sign s = (Sign)b.getState();
-            s.setLine(0, ChatColor.translateAlternateColorCodes('&', new Random().nextInt(10) + "[Snow]"));
+            s.setLine(0, ChatColor.translateAlternateColorCodes('&', "&" + new Random().nextInt(10) + "[Miners]"));
             s.setLine(1, arenaAPI.getName());
             s.setLine(2, arenaAPI.getPlayers().size() + "/" + storage.getMaxPlayers());
             s.setLine(3, ChatColor.RED  +arenaAPI.getState().toString());

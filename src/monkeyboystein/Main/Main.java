@@ -25,14 +25,25 @@ import java.util.List;
  */
 public class Main extends JavaPlugin {
     PluginListener listener = new PluginListener();
-    public List<ArenaAPI> arenas = new ArrayList<ArenaAPI>();
+   // public List<ArenaAPI> arenas = new ArrayList<ArenaAPI>();
     public void onEnable()
     {
         getServer().getPluginManager().registerEvents(listener, this);
         setup();
         saveDefaultConfig();
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+            @Override
+            public void run() {
+                for(ArenaAPI arenaAPI: storage.getArenas())
+                {
+                    signManager.updateSign(arenaAPI);
+                }
+                mainScoreboardManager.updateScoreboard();
+                tickManager.tick(ArenaState.ON);
+            }
+        }, 20, 20);
     }
-
+    MapUtils mapUtils = new MapUtils();
     MapDecay decay = new MapDecay();
     SQLAPI sqlapi = new SQLAPI(getConfig().getString("IP"), getConfig().getString("Username"), getConfig().getString("Password"), getConfig().getInt("Port"), "player_data");
     public static Storage storage = new Storage();
@@ -44,6 +55,8 @@ public class Main extends JavaPlugin {
     MainScoreboardManager mainScoreboardManager = new MainScoreboardManager();
     public void setup()
     {
+        storage.setMain(this);
+        storage.setMapUtils(mapUtils);
         storage.setMaxPlayers(getConfig().getInt("MaxPlayers"));
         storage.setDecay(decay);
         storage.setListener(listener);
@@ -54,13 +67,43 @@ public class Main extends JavaPlugin {
         storage.setSignManager(signManager);
         storage.setTickManager(tickManager);
         storage.setMainScoreboardManager(mainScoreboardManager);
-        storage.setMain(this);
 
 
-        generateArenas();
+        Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+            @Override
+            public void run() {
+                generateArenas();
+            }
+        }, 60);
+
     }
-    List<String> games = new ArrayList<String>();
+    List<String> games = getConfig().getStringList("Games");
+    public List<Block> blocksFromTwoPoints(Location loc1, Location loc2) {
+        System.out.print(loc1);
+        System.out.print(loc2);
+        List<Block> blocks = new ArrayList<Block>();
 
+        int topBlockX = (loc1.getBlockX() < loc2.getBlockX() ? loc2.getBlockX() : loc1.getBlockX());
+        int bottomBlockX = (loc1.getBlockX() > loc2.getBlockX() ? loc2.getBlockX() : loc1.getBlockX());
+
+        int topBlockY = (loc1.getBlockY() < loc2.getBlockY() ? loc2.getBlockY() : loc1.getBlockY());
+        int bottomBlockY = (loc1.getBlockY() > loc2.getBlockY() ? loc2.getBlockY() : loc1.getBlockY());
+
+        int topBlockZ = (loc1.getBlockZ() < loc2.getBlockZ() ? loc2.getBlockZ() : loc1.getBlockZ());
+        int bottomBlockZ = (loc1.getBlockZ() > loc2.getBlockZ() ? loc2.getBlockZ() : loc1.getBlockZ());
+
+        for (int x = bottomBlockX; x <= topBlockX; x++) {
+            for (int z = bottomBlockZ; z <= topBlockZ; z++) {
+                for (int y = bottomBlockY; y <= topBlockY; y++) {
+                    Block block = loc1.getWorld().getBlockAt(x, y, z);
+
+                    blocks.add(block);
+                }
+            }
+        }
+
+        return blocks;
+    }
     public ArenaAPI createArena(String s)
     {
         ArenaAPI arenaAPI = new ArenaAPI(s.toUpperCase());
@@ -80,7 +123,7 @@ public class Main extends JavaPlugin {
         arenaAPI.setCorner2(corner2);
         System.out.print(corner1);
         System.out.print(corner2);
-        arenaAPI.setArenaBlocks(MapUtils.blocksFromTwoPoints(corner1,corner2));
+        arenaAPI.setArenaBlocks(blocksFromTwoPoints(corner1, corner2));
         String lobbypath = arenaAPI.getName() + ".Lobby.";
         arenaAPI.setLobby(new Lobby(new Location(Bukkit.getWorld("world"), getConfig().getInt(lobbypath + "X"), getConfig().getInt(lobbypath + "Y"), getConfig().getInt(lobbypath + "Z"))));
         arenaAPI.reset();
@@ -113,7 +156,8 @@ public class Main extends JavaPlugin {
 
     public void generateArenas()
     {
-        arenas.clear();
+        storage.setArenas(new ArrayList<ArenaAPI>());
+        System.out.print(games);
         for(String s : games)
         {
             ArenaAPI arenaAPI = new ArenaAPI(s);
@@ -128,9 +172,11 @@ public class Main extends JavaPlugin {
             int z2 = getConfig().getInt(path2 + "Z");
             Location corner1 = new Location(Bukkit.getWorld("world"),x,y,z);
             Location corner2 = new Location(Bukkit.getWorld("world"),x2,y2,z2);
-            arenaAPI.setArenaBlocks(MapUtils.blocksFromTwoPoints(corner1,corner2));
+            arenaAPI.setArenaBlocks(blocksFromTwoPoints(corner1, corner2));
             String lobbypath = arenaAPI.getName() + ".Lobby.";
             arenaAPI.setLobby(new Lobby(new Location(Bukkit.getWorld("world"), getConfig().getInt(lobbypath + "X"), getConfig().getInt(lobbypath + "Y"), getConfig().getInt(lobbypath + "Z"))));
+            arenaAPI.setCorner1(corner1);
+            arenaAPI.setCorner2(corner2);
             arenaAPI.reset();
             arenaAPI.setTopY(getConfig().getInt(arenaAPI.getName() + ".TopY"));
             arenaAPI.setSpawns(new ArenaPlayerSpawns());
@@ -154,7 +200,7 @@ public class Main extends JavaPlugin {
             int __z = getConfig().getInt(signFormat + "Z");
             Location signLoc = new Location(Bukkit.getWorld("world"),__x,__y,__z);
             arenaAPI.setSignLoc(signLoc);
-            arenas.add(arenaAPI);
+            storage.addArena(arenaAPI);
         }
     }
 
@@ -162,7 +208,7 @@ public class Main extends JavaPlugin {
 
     public void updateArena(ArenaAPI arena)
     {
-        arenas.remove(arena);
+        storage.removeArena(arena);
         for(String players : arena.getPlayers())
         {
             Bukkit.getPlayer(players).kickPlayer("Updating arena: Please rejoin");
@@ -181,7 +227,7 @@ public class Main extends JavaPlugin {
         int z2 = getConfig().getInt(path2 + "Z");
         Location corner1 = new Location(Bukkit.getWorld("world"),x,y,z);
         Location corner2 = new Location(Bukkit.getWorld("world"),x2,y2,z2);
-        arenaAPI.setArenaBlocks(MapUtils.blocksFromTwoPoints(corner1,corner2));
+        arenaAPI.setArenaBlocks(blocksFromTwoPoints(corner1, corner2));
         String lobbypath = arenaAPI.getName() + ".Lobby.";
         arenaAPI.setLobby(new Lobby(new Location(Bukkit.getWorld("world"), getConfig().getInt(lobbypath + "X"), getConfig().getInt(lobbypath + "Y"), getConfig().getInt(lobbypath + "Z"))));
         arenaAPI.reset();
@@ -207,7 +253,7 @@ public class Main extends JavaPlugin {
         int __z = getConfig().getInt(signFormat + "Z");
         Location signLoc = new Location(Bukkit.getWorld("world"),__x,__y,__z);
         arenaAPI.setSignLoc(signLoc);
-        arenas.add(arenaAPI);
+        storage.addArena(arenaAPI);
     }
 
 
@@ -218,7 +264,14 @@ public class Main extends JavaPlugin {
 
 
 
-
+    public boolean isFactorOf(int num, int factor)
+    {
+        if(num%factor==0)
+        {
+            return true;
+        }
+        return false;
+    }
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
@@ -387,7 +440,7 @@ public class Main extends JavaPlugin {
         {
             if(arenaManager.isInArena(((Player) sender)))
             {
-                ArenaAPI arena = arenaManager.getArena(((Player)sender).getName());
+                ArenaAPI arena = arenaManager.getPlayerArena(((Player)sender));
                 if(arena!=null)
                 {
                     arena.removePlayer(sender.getName());
@@ -612,6 +665,7 @@ public class Main extends JavaPlugin {
                 commands.add(cmd.getName() + " setrank [playername] [rank]");
                 commands.add(cmd.getName() + " setgems [playername] [gems]");
                 commands.add(cmd.getName() + " generatetables");
+                commands.add(cmd.getName() + " settopy [arenaname]");
               //  commands.add(cmd.getName() + " editmode (removes wither that spawns on top of you)");
                 for (String s : commands) {
                     sender.sendMessage(storage.getHeader() + s);
@@ -621,7 +675,22 @@ public class Main extends JavaPlugin {
 
 
 
+                if(args[0].equalsIgnoreCase("settopy"))
+                {
+                    ArenaAPI arenaAPI = arenaManager.getArena(args[1].toUpperCase());
 
+                    if(arenaAPI!=null)
+                    {
+                        int y = ((Player)sender).getLocation().getBlockY();
+                        getConfig().set(arenaAPI.getName() + ".TopY", y);
+                        saveConfig();
+                        reloadConfig();
+                        sender.sendMessage(storage.getHeader() + "Updated");
+                        updateArena(arenaAPI);
+                        return true;
+                    }
+
+                }
                 if(args[0].equalsIgnoreCase("generatetables"))
                 {
                     try
@@ -668,12 +737,14 @@ public class Main extends JavaPlugin {
                 if(args[0].equalsIgnoreCase("updatearena"))
                 {
                     final ArenaAPI a = arenaManager.getArena(args[1].toUpperCase());
+                    System.out.print(storage.getArenas());
+                    Bukkit.broadcastMessage(a.getName());
                     if(a!=null)
                     {
                         if(a.getState()== ArenaState.OFF)
                         {
-                            arenas.remove(a);
-                            arenas.add(createArena(a.getName()));
+                            storage.removeArena(a);
+                            storage.addArena(createArena(a.getName()));
                         }
                         else if(a.getState()==ArenaState.ON)
                         {
@@ -681,16 +752,16 @@ public class Main extends JavaPlugin {
                             Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
                                 @Override
                                 public void run() {
-                                    arenas.remove(a);
-                                    arenas.add(createArena(a.getName()));
+                                    storage.removeArena(a);
+                                    storage.addArena(createArena(a.getName()));
                                 }
                             }, 40);
                         }
                         else
                         {
                             a.endGame();
-                            arenas.remove(a);
-                            arenas.add(createArena(a.getName()));
+                            storage.removeArena(a);
+                            storage.addArena(createArena(a.getName()));
                         }
                         sender.sendMessage(storage.getHeader() + "Updated");
                         return true;
@@ -703,7 +774,7 @@ public class Main extends JavaPlugin {
                 }
                 if (args[0].equalsIgnoreCase("updatesigns")) {
                     sender.sendMessage(storage.getHeader() + "Updating signs...");
-                    for(ArenaAPI arenaAPI: arenas)
+                    for(ArenaAPI arenaAPI: storage.getArenas())
                     {
                         signManager.updateSign(arenaAPI);
                     }
@@ -717,7 +788,7 @@ public class Main extends JavaPlugin {
                     saveConfig();
                     reloadConfig();
 
-                    for(ArenaAPI arenaAPI : arenas)
+                    for(ArenaAPI arenaAPI : storage.getArenas())
                     {
                         updateArena(arenaAPI);
                     }

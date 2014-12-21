@@ -13,6 +13,14 @@ public class ArenaScore {
         this.playerName = playerName;
         this.arenaName = arenaName;
     }
+    public int getScore()
+    {
+        return score;
+    }
+    public String getPlayerName()
+    {
+        return playerName;
+    }
 
     public void score()
     {
@@ -22,4 +30,9 @@ public class ArenaScore {
     {
         score+=i;
     }
+    public void setScore(int i)
+    {
+        score = i;
+    }
+
 }

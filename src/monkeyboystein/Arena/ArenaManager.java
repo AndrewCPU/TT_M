@@ -24,7 +24,7 @@ public class ArenaManager {
     {
         for(ArenaAPI arena : storage.getArenas())
         {
-            if(arena.equals(name))
+            if(arena.getName().equalsIgnoreCase(name))
             {
                 return arena;
             }

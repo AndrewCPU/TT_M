@@ -3,3 +3,4 @@ IP: '127.0.0.1'
 Port: 3306
 Username: 'root'
 Password: 'password'
+MaxPlayers: 1
