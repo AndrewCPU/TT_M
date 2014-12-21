@@ -24,7 +24,16 @@ public class Storage {
     int maxPlayers = 5;
     SignManager signManager;
 
+    public String getHeader() {
+        return header;
+    }
+
+    public void setHeader(String header) {
+        this.header = header;
+    }
+
     public SignManager getSignManager() {
+
         return signManager;
     }
 

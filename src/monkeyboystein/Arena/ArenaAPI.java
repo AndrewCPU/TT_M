@@ -4,9 +4,13 @@ import monkeyboystein.Main.Main;
 import monkeyboystein.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,7 +85,6 @@ public class ArenaAPI {
     public void setPlayers(List<String> players) {
         this.players = players;
     }
-
     public void addPlayer(String s)
     {
         if(players.contains(s))
@@ -94,13 +97,88 @@ public class ArenaAPI {
         }
         update();
     }
+    List<BukkitTask> tasks = new ArrayList<BukkitTask>();
     public void startCountdown()
     {
+        setState(ArenaState.STARTING);
+        for(int i = 10; i>=0; i--)
+        {
+            final int time = i;
+            int num = 0;
+            if(i==10)
+            {
+                num = 0;
+            }
+            else if(i==9)
+            {
+                num = 1;
+            }
+            else if(i==8)
+            {
+                num = 2;
+            }
+            else if(i==7)
+            {
+                num = 3;
+            }
+            else if(i==6)
+            {
+                num = 4;
+            }
+            else if(i==5)
+            {
+                num = 5;
+            }
+            else if(i==4)
+            {
+                num = 6;
+            }
+            else if(i==3)
+            {
+                num = 7;
+            }
+            else if(i==2)
+            {
+                num = 8;
+            }
+            else if(i==1)
+            {
+                num = 9;
+            }
+            else if(i==0)
+            {
+                num = 10;
+            }
+            BukkitTask task = new BukkitRunnable()
+            {
+                @Override
+                public void run()
+                {
+                    if(storage.getMaxPlayers()==players.size())
+                    {
+                        if(time==0)
+                        {
+                            startGame();
+                            tasks.clear();
+                            cancel();
+                        }
+                    }
+                    else
+                    {
+                        for(BukkitTask bukkitTask : tasks)
+                        {
+                            bukkitTask.cancel();
+                        }
+                    }
+                }
+            }.runTaskLater(storage.getMain(), num);
+            tasks.add(task);
 
+        }
     }
     public void update()
     {
-        if(players.size()==storage.getMaxPlayers())
+        if(players.size()==storage.getMaxPlayers() && getState()==ArenaState.OFF)
         {
             startCountdown();
         }
@@ -114,6 +192,7 @@ public class ArenaAPI {
         {
             players.add(s);
         }
+        update();
     }
 
     public Location getCorner1() {
@@ -215,7 +294,18 @@ public class ArenaAPI {
     }
     public void startGame()
     {
-
+        setState(ArenaState.ON);
+        int i = 1;
+        for(String s : getPlayers())
+        {
+            Player p = Bukkit.getPlayer(s);
+            p.teleport(getSpawns().getPlayerSpawn(i));
+            i++;
+            p.getInventory().addItem(new ItemStack(Material.DIAMOND_PICKAXE));
+            p.updateInventory();
+            scores.add(new ArenaScore(0,s,this.getName()));
+            p.sendMessage(storage.getHeader() + "Starting game...");
+        }
     }
 
     public Lobby getLobby() {
@@ -260,7 +350,7 @@ public class ArenaAPI {
         Location higher = getHigher();
         higher.setY(getLower().getY());
         setCurrent2(higher);
-
+        setState(ArenaState.OFF);
     }
 
 
