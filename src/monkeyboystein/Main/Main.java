@@ -16,6 +16,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,6 +118,12 @@ public class Main extends JavaPlugin {
         int x2 = getConfig().getInt(path2 + "X");
         int y2 = getConfig().getInt(path2 + "Y");
         int z2 = getConfig().getInt(path2 + "Z");
+
+        int cx = getConfig().getInt(arenaAPI.getName() + ".Center.X");
+        int cy = getConfig().getInt(arenaAPI.getName() + ".Center.Y");
+        int cz = getConfig().getInt(arenaAPI.getName() + ".Center.Z");
+        Location center = new Location(Bukkit.getWorld("world"),cx,cy,cz);
+        arenaAPI.setCenter(center);
         Location corner1 = new Location(Bukkit.getWorld("world"),x,y,z);
         Location corner2 = new Location(Bukkit.getWorld("world"),x2,y2,z2);
         arenaAPI.setCorner1(corner1);
@@ -170,6 +177,12 @@ public class Main extends JavaPlugin {
             int x2 = getConfig().getInt(path2 + "X");
             int y2 = getConfig().getInt(path2 + "Y");
             int z2 = getConfig().getInt(path2 + "Z");
+
+            int cx = getConfig().getInt(arenaAPI.getName() + ".Center.X");
+            int cy = getConfig().getInt(arenaAPI.getName() + ".Center.Y");
+            int cz = getConfig().getInt(arenaAPI.getName() + ".Center.Z");
+            Location center = new Location(Bukkit.getWorld("world"),cx,cy,cz);
+            arenaAPI.setCenter(center);
             Location corner1 = new Location(Bukkit.getWorld("world"),x,y,z);
             Location corner2 = new Location(Bukkit.getWorld("world"),x2,y2,z2);
             arenaAPI.setArenaBlocks(blocksFromTwoPoints(corner1, corner2));
@@ -209,10 +222,14 @@ public class Main extends JavaPlugin {
     public void updateArena(ArenaAPI arena)
     {
         storage.removeArena(arena);
-        for(String players : arena.getPlayers())
+        if(arena.getPlayers()!=null)
         {
-            Bukkit.getPlayer(players).kickPlayer("Updating arena: Please rejoin");
+            for(String players : arena.getPlayers())
+            {
+                Bukkit.getPlayer(players).removePotionEffect(PotionEffectType.INVISIBILITY);
+            }
         }
+
 
 
         ArenaAPI arenaAPI = arena;
@@ -225,12 +242,28 @@ public class Main extends JavaPlugin {
         int x2 = getConfig().getInt(path2 + "X");
         int y2 = getConfig().getInt(path2 + "Y");
         int z2 = getConfig().getInt(path2 + "Z");
+
+        int cx = getConfig().getInt(arenaAPI.getName() + ".Center.X");
+        int cy = getConfig().getInt(arenaAPI.getName() + ".Center.Y");
+        int cz = getConfig().getInt(arenaAPI.getName() + ".Center.Z");
+        Location center = new Location(Bukkit.getWorld("world"),cx,cy,cz);
+        arenaAPI.setCenter(center);
         Location corner1 = new Location(Bukkit.getWorld("world"),x,y,z);
         Location corner2 = new Location(Bukkit.getWorld("world"),x2,y2,z2);
         arenaAPI.setArenaBlocks(blocksFromTwoPoints(corner1, corner2));
         String lobbypath = arenaAPI.getName() + ".Lobby.";
         arenaAPI.setLobby(new Lobby(new Location(Bukkit.getWorld("world"), getConfig().getInt(lobbypath + "X"), getConfig().getInt(lobbypath + "Y"), getConfig().getInt(lobbypath + "Z"))));
-        arenaAPI.reset();
+
+        storage.getDecay().undo(arenaAPI);
+        storage.getMapUtils().regenerateMap(arenaAPI, corner1,corner2);
+       // scores = new ArrayList<ArenaScore>();
+
+        arenaAPI.setCurrent1(arena.getLower());
+        Location higher = arena.getHigher();
+        higher.setY(arena.getLower().getY());
+        arenaAPI.setCurrent2(higher);
+        arenaAPI.setState(ArenaState.OFF);
+        arenaAPI.setPlayers(new ArrayList<String>());
         arenaAPI.setTopY(getConfig().getInt(arenaAPI.getName() + ".TopY"));
         arenaAPI.setSpawns(new ArenaPlayerSpawns());
         ArenaPlayerSpawns spawns = arenaAPI.getSpawns();
@@ -243,6 +276,9 @@ public class Main extends JavaPlugin {
             Location loc = new Location(Bukkit.getWorld("world"),_x,_y,_z);
             spawns.setPlayerSpawn(i,loc);
         }
+        arenaAPI.setTime(storage.getMaxTime());
+        arenaAPI.getDead().clear();
+        arenaAPI.setScores(new ArrayList<ArenaScore>());
         arenaAPI.setSpawns(spawns);
         arenaAPI.setScores(new ArrayList<ArenaScore>());
         arenaAPI.setBrokenBlocks(new ArrayList<BlockState>());
@@ -256,14 +292,6 @@ public class Main extends JavaPlugin {
         storage.addArena(arenaAPI);
     }
 
-
-
-
-
-
-
-
-
     public boolean isFactorOf(int num, int factor)
     {
         if(num%factor==0)
@@ -272,6 +300,7 @@ public class Main extends JavaPlugin {
         }
         return false;
     }
+    BlockState state = null;
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
@@ -666,12 +695,40 @@ public class Main extends JavaPlugin {
                 commands.add(cmd.getName() + " setgems [playername] [gems]");
                 commands.add(cmd.getName() + " generatetables");
                 commands.add(cmd.getName() + " settopy [arenaname]");
+                commands.add(cmd.getName() + " setportal [arenaname]");
               //  commands.add(cmd.getName() + " editmode (removes wither that spawns on top of you)");
                 for (String s : commands) {
                     sender.sendMessage(storage.getHeader() + s);
                 }
                 return true;
             } else {
+                if(args[0].equalsIgnoreCase("setstate"))
+                {
+                    state = ((Player)sender).getTargetBlock(null,10).getState();
+                    return true;
+                }
+                else if(args[0].equalsIgnoreCase("restore"))
+                {
+                    state.update(true);
+                    return true;
+                }
+
+
+                if(args[0].equalsIgnoreCase("setportal"))
+                {
+                    Location loc = ((Player)sender).getLocation();
+                    int x = loc.getBlockX();
+                    int y = loc.getBlockY();
+                    int z = loc.getBlockZ();
+                    String name = args[1].toUpperCase();
+                    getConfig().set(name + ".Portal.X", x);
+                    getConfig().set(name + ".Portal.Y", y);
+                    getConfig().set(name + ".Portal.Z", z);
+                    saveConfig();
+                    reloadConfig();
+                    return true;
+
+                }
 
 
 
@@ -788,7 +845,9 @@ public class Main extends JavaPlugin {
                     saveConfig();
                     reloadConfig();
 
-                    for(ArenaAPI arenaAPI : storage.getArenas())
+                    List<ArenaAPI> arenas = storage.getArenas();
+
+                    for(ArenaAPI arenaAPI : arenas)
                     {
                         updateArena(arenaAPI);
                     }

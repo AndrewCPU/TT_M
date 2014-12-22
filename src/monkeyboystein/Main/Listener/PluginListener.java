@@ -5,10 +5,13 @@ import monkeyboystein.Main.Main;
 import monkeyboystein.utils.ArenaScore;
 import monkeyboystein.utils.Storage;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.potion.PotionEffect;
@@ -25,9 +28,15 @@ public class PluginListener implements Listener{
         storage.getManagement().eventTrigger(event);
     }
     @EventHandler
-    public void join(PlayerJoinEvent event)
+    public void join(final PlayerJoinEvent event)
     {
         storage.getManagement().eventTrigger(event);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(storage.getMain(), new Runnable() {
+            @Override
+            public void run() {
+                event.getPlayer().teleport(event.getPlayer().getWorld().getSpawnLocation());
+            }
+        }, 10);
     }
     @EventHandler
     public void interact(PlayerInteractEvent event)
@@ -80,13 +89,42 @@ public class PluginListener implements Listener{
                             score = s;
                         }
                     }
-                    if(event.getTo().getBlockY()>=arenaAPI.getTopY() && score.getScore()>=100 && arenaAPI.getTime()<=350)
+                    if(event.getTo().getBlockY()>=arenaAPI.getTopY() && score.getScore()>=350 && arenaAPI.getTime()<=150)
                     {
                         arenaAPI.endGame();
                     }
                 }
             }
         }
+
+        for(ArenaAPI arenaAPI : storage.getArenas())
+        {
+            int x = storage.getMain().getConfig().getInt(arenaAPI.getName() + ".Portal.X");
+            int y = storage.getMain().getConfig().getInt(arenaAPI.getName() + ".Portal.Y");
+            int z = storage.getMain().getConfig().getInt(arenaAPI.getName() + ".Portal.Z");
+            Location loc = new Location(Bukkit.getWorld("world"),x,y,z);
+            if(event.getPlayer().getLocation().getBlockX()==loc.getBlockX() && event.getPlayer().getLocation().getBlockY()==loc.getBlockY() && event.getPlayer().getLocation().getBlockZ()==loc.getBlockZ())
+            {
+
+                if(arenaAPI!=null)
+                {
+                    if(arenaAPI.getPlayers().size()==storage.getMaxPlayers())
+                    {
+                        event.getPlayer().sendMessage(storage.getHeader() + "That game is full");
+                    }
+                    else
+                    {
+                        storage.getManagement().joinGame(arenaAPI,event.getPlayer());
+                    }
+                }
+            }
+        }
+
+    }
+    @EventHandler
+    public void onBlowUP(EntityExplodeEvent event)
+    {
+        event.setCancelled(true);
     }
     @EventHandler
     public void onDeath(PlayerDeathEvent event)
@@ -108,12 +146,19 @@ public class PluginListener implements Listener{
     public void onRespawn(PlayerRespawnEvent event)
     {
         if(storage.getArenaManager().isInArena(event.getPlayer())) {
-            ArenaAPI arenaAPI = storage.getArenaManager().getPlayerArena(event.getPlayer());
-            if (arenaAPI != null) {
-                event.setRespawnLocation(arenaAPI.getSpawns().getPlayerSpawn(1));
+            ArenaAPI api = storage.getArenaManager().getPlayerArena(event.getPlayer());
+            api.removePlayer(event.getPlayer().getName());
+            ArenaScore score = null;
+            for(ArenaScore s : api.getScores())
+            {
+                if(s.getPlayerName().equals(event.getPlayer().getName()))
+                {
+                    score = s;
+
+                }
             }
-            arenaAPI.addDead(event.getPlayer().getName());
-            event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10000, 10, true));
+            api.removeScore(score);
+
         }
     }
 }

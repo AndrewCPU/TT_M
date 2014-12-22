@@ -54,11 +54,8 @@ public class MapDecay {
         {
             for(BlockState state : states.get(arenaAPI))
             {
-
-
+                System.out.print(state);
                 state.update(true);
-
-
             }
             states.remove(arenaAPI);
         }

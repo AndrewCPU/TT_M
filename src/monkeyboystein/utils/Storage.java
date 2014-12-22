@@ -26,6 +26,15 @@ public class Storage {
     TickManager tickManager;
     MainScoreboardManager mainScoreboardManager;
     MapUtils mapUtils;
+    int maxTime = 300;
+
+    public int getMaxTime() {
+        return maxTime;
+    }
+
+    public void setMaxTime(int maxTime) {
+        this.maxTime = maxTime;
+    }
 
     public MapUtils getMapUtils() {
         return mapUtils;

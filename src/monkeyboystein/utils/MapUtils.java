@@ -41,13 +41,13 @@ public class MapUtils {
         for (Block b : blocks)
         {
             Location loc = b.getLocation();
-            if(isOre(b))
+            if(isOre(b) || b.getType()==Material.GLOWSTONE)
             {
                 loc.getBlock().setType(Material.STONE);
             }
             if(loc.getBlock().getType()== Material.STONE)
             {
-                int i = new Random().nextInt(20 - 1) + 1;
+                int i = new Random().nextInt(21 - 1) + 1;
                 if(i==1)
                 {
                     loc.getBlock().setType(Material.COAL_ORE);
@@ -75,6 +75,10 @@ public class MapUtils {
                 else if(i==7)
                 {
                     loc.getBlock().setType(Material.EMERALD_ORE);
+                }
+                else if(i==8)
+                {
+                    loc.getBlock().setType(Material.GLOWSTONE);
                 }
                 else
                 {

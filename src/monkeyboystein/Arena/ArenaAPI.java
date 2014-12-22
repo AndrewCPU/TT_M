@@ -29,7 +29,7 @@ public class ArenaAPI {
     Location current1;
     Location current2;
     List<Block> arenaBlocks;
-    int time = 50;
+    int time = 300;
     List<ArenaScore> scores = new ArrayList<ArenaScore>();
     ArenaPlayerSpawns spawns = new ArenaPlayerSpawns();
     Lobby lobby = new Lobby(null);
@@ -221,12 +221,17 @@ public class ArenaAPI {
     {
         if(players.contains(s))
         {
-            players.add(s);
+            players.remove(s);
+
         }
         if(dead.contains(s))
         {
             dead.remove(s);
         }
+
+        Bukkit.getPlayer(s).teleport(Bukkit.getPlayer(s).getWorld().getSpawnLocation());
+        Bukkit.getPlayer(s).getInventory().setContents(Bukkit.createInventory(null,Bukkit.getPlayer(s).getInventory().getSize()).getContents());
+        Bukkit.getPlayer(s).getEquipment().setArmorContents(null);
         update();
     }
 
@@ -430,17 +435,8 @@ public class ArenaAPI {
 
     public void reset()
     {
-        storage.getDecay().undo(this);
-        storage.getMapUtils().regenerateMap(this, corner1,corner2);
-        scores = new ArrayList<ArenaScore>();
-        time = 50;
-        setCurrent1(getLower());
-        Location higher = getHigher();
-        higher.setY(getLower().getY());
-        setCurrent2(higher);
-        setState(ArenaState.OFF);
-        setPlayers(new ArrayList<String>());
-        dead = new ArrayList<String>();
+
+        storage.getMain().updateArena(this);
     }
     public void addDead(String s)
     {
@@ -455,7 +451,7 @@ public class ArenaAPI {
     public void tick()
     {
         time-=1;
-        if(time<=0 || dead.size()==players.size() || dead.size() == (players.size() - 1) || players.size()==1 || players.size()==0)
+        if(time<=0 || dead.size()==players.size() || dead.size() == (players.size() - 1) && storage.getMaxPlayers()!=1 || players.size()==1  && storage.getMaxPlayers()!=1|| players.size()==0)
         {
             endGame();
         }
@@ -464,7 +460,7 @@ public class ArenaAPI {
         {
             Bukkit.getPlayer(s).setLevel(time);
         }
-        if(storage.getMain().isFactorOf(time,10))
+        if(storage.getMain().isFactorOf(time,100))
         {
             storage.getDecay().decay(this);
         }
